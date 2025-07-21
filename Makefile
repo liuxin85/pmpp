@@ -8,7 +8,8 @@ SRC = ${wildcard *.cu}
 TARGET = ${patsubst %.cu, %, $(SRC)}
 
 # 编译与链接参数
-LDFLAGS = -arch=sm_80 -diag-suppress 2464 -Wno-deprecated-gpu-targets -lglut -lGL -lGLU
+# LDFLAGS = -arch=sm_80 -diag-suppress 2464 -Wno-deprecated-gpu-targets -lglut -lGL -lGLU
+LDFLAGS = -arch=sm_80 -diag-suppress 2464 -Wno-deprecated-gpu-targets
 
 # 默认目标
 all: $(TARGET)
