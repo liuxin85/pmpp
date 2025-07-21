@@ -1,6 +1,7 @@
 #include "timer.h"
 
 #define BLOCK_DIM 1024
+#define COARSE_FACTOR 16
 
 __global__ void reduce_kernel(float* input, float* partialSums, unsigned int N){
     unsigned int segment = blockIdx.x* blockDim.x *2;
@@ -8,9 +9,11 @@ __global__ void reduce_kernel(float* input, float* partialSums, unsigned int N){
 
     // shared memory
     __shared__ float input_s[BLOCK_DIM];
-    float val1 = (i < N) ? input[i] : 0.0f;
-    float val2 = (i + BLOCK_DIM < N) ? input[i + BLOCK_DIM] : 0.0f;
-    input_s[threadIdx.x] = val1 + val2;
+    float sum = 0.0f;
+    for(unsigned int tile=0; tile < COARSE_FACTOR*2; ++tile){
+        sum += input[i + tile*BLOCK_DIM];
+    }
+    input_s[threadIdx.x] = sum;
     __syncthreads();
 
     for(unsigned int stride=BLOCK_DIM/2; stride > 0; stride /=2){
@@ -45,7 +48,7 @@ float reduce_gpu(float* input, unsigned int N){
     // Allocate partial sums
     startTime(&timer);
     const unsigned int numThreadsPerBlock = BLOCK_DIM;
-    const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock;
+    const unsigned int numElementsPerBlock = 2 * numThreadsPerBlock * COARSE_FACTOR;
     const unsigned int numBlocks = (N + numElementsPerBlock - 1)/numElementsPerBlock;
     float* partialSums = (float*)malloc(numBlocks*sizeof(float));
     float* partialSums_d;
